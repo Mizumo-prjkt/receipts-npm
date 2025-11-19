@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt Generator Test</title>
+    <!-- 
+      Add an import map to tell the browser where to find the 'qrcode' module.
+      This must come before any script that imports the module.
+    -->
+    <script type="importmap">
+      {
+        "imports": { "qrcode": "https://cdn.jsdelivr.net/npm/qrcode@1.5.3/+esm" }
+      }
+    </script>
+    <style>
+        body { font-family: sans-serif; margin: 2em; background-color: #f4f4f9; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 2em; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        .form-group { margin-bottom: 1em; }
+        label { display: block; margin-bottom: .5em; font-weight: bold; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; border: none; background-color: #007bff; color: white; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        #items-container .item { display: flex; gap: 10px; margin-bottom: 10px; }
+        #items-container .item input { flex-grow: 1; }
+        .remove-item { background-color: #dc3545; padding: 8px 12px; font-size: 14px; }
+        .remove-item:hover { background-color: #c82333; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Receipt Generator</h1>
+        <form id="receipt-form">
+            <div class="form-group">
+                <label for="storeName">Store Name</label>
+                <input type="text" id="storeName" value="Awesome Store" required>
+            </div>
+
+            <div class="form-group">
+                <label for="companyAddress">Company Address (Optional)</label>
+                <input type="text" id="companyAddress" value="123 Main St, Anytown, USA">
+            </div>
+            <div class="form-group">
+                <label for="logoPath">Logo Path (e.g., /assets/logo.png - Node.js only)</label>
+                <input type="text" id="logoPath" value="">
+            </div>
+            <h2>Items</h2>
+            <div id="items-container">
+                <div class="item">
+                    <input type="text" class="item-name" placeholder="Item Name" value="Milk" required>
+                    <input type="number" class="item-quantity" placeholder="Qty" value="2" min="1" required>
+                    <input type="number" class="item-price" placeholder="Price" value="3.50" step="0.01" min="0" required>
+                    <button type="button" class="remove-item">Remove</button>
+                </div>
+                 <div class="item">
+                    <input type="text" class="item-name" placeholder="Item Name" value="Bread" required>
+                    <input type="number" class="item-quantity" placeholder="Qty" value="1" min="1" required>
+                    <input type="number" class="item-price" placeholder="Price" value="2.75" step="0.01" min="0" required>
+                    <button type="button" class="remove-item">Remove</button>
+                </div>
+            </div>
+            <button type="button" id="add-item">Add Item</button>
+
+            <h2 style="margin-top: 2em;">Totals</h2>
+            <div class="form-group">
+                <label for="currency">Currency Symbol</label>
+                <input type="text" id="currency" value="$">
+            </div>
+            <div class="form-group">
+                <label for="discount">Discount Value (fixed amount)</label>
+                <input type="number" id="discount" value="1.50" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="taxRate">Tax Rate (%)</label>
+                <input type="number" id="taxRate" value="8.25" step="0.01">
+            </div>
+
+            <h2 style="margin-top: 2em;">Extras</h2>
+            <div class="form-group">
+                <label for="qrCodeData">QR Code Data (e.g., URL or ID)</label>
+                <input type="text" id="qrCodeData" value="https://github.com/Mizumo-prjkt">
+            </div>
+
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="saveToStorage">
+                <label for="saveToStorage">Save receipt data to browser storage (for testing)</label>
+            </div>
+
+            <button type="submit">Generate Receipt Image</button>
+        </form>
+
+        <!-- Container for the embedded receipt image -->
+        <div id="receipt-output" style="margin-top: 2em; text-align: center; display: none;">
+            <hr style="margin-bottom: 2em;">
+            <h2>Generated Receipt</h2>
+            <img id="receipt-image" src="" alt="Generated Receipt" style="max-width: 100%; border: 1px solid #ddd; padding: 10px;">
+            <br>
+            <a id="download-button" href="#" download="receipt.png" style="display: inline-block; margin-top: 1em; text-decoration: none; padding: 10px 15px; border: none; background-color: #28a745; color: white; border-radius: 4px; cursor: pointer;">Download Image</a>
+        </div>
+    </div>
+
+    <script type="module">
+        // By adding a version query string, we force the browser to re-load the script
+        // and not use a cached version. Change the number every time you update the script.
+        const scriptVersion = new Date().getTime(); // Generates a unique number every time
+        const { generateReceiptImage } = await import(`./dist/receipt.js?v=${scriptVersion}`);
+
+
+        document.getElementById('add-item').addEventListener('click', () => {
+            const itemsContainer = document.getElementById('items-container');
+            const newItem = document.createElement('div');
+            newItem.classList.add('item');
+            newItem.innerHTML = `
+                <input type="text" class="item-name" placeholder="Item Name" required>
+                <input type="number" class="item-quantity" placeholder="Qty" value="1" min="1" required>
+                <input type="number" class="item-price" placeholder="Price" value="0.00" step="0.01" min="0" required>
+                <button type="button" class="remove-item">Remove</button>
+            `;
+            itemsContainer.appendChild(newItem);
+        });
+
+        // Event delegation to handle remove button clicks
+        document.getElementById('items-container').addEventListener('click', (event) => {
+            if (event.target.classList.contains('remove-item')) {
+                const itemsContainer = document.getElementById('items-container');
+                // Prevent removing the last item
+                if (itemsContainer.children.length > 1) {
+                    event.target.closest('.item').remove();
+                } else {
+                    alert("You must have at least one item.");
+                }
+            }
+        });
+
+        document.getElementById('receipt-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const items = [];
+            document.querySelectorAll('#items-container .item').forEach(itemEl => {
+                const name = itemEl.querySelector('.item-name').value;
+                const quantity = parseFloat(itemEl.querySelector('.item-quantity').value);
+                const price = parseFloat(itemEl.querySelector('.item-price').value);
+                if (name && quantity > 0 && price >= 0) {
+                    items.push({ name, quantity, price });
+                }
+            });
+
+            const discountValue = parseFloat(document.getElementById('discount').value);
+            const taxRateValue = parseFloat(document.getElementById('taxRate').value);
+
+            const receiptData = {
+                logoPath: document.getElementById('logoPath').value,
+                companyAddress: document.getElementById('companyAddress').value,
+                currency: document.getElementById('currency').value,
+                storeName: document.getElementById('storeName').value,
+                items: items,
+                taxRate: taxRateValue > 0 ? taxRateValue / 100 : 0,
+                discount: discountValue > 0 ? { type: 'fixed', value: discountValue } : null,
+                qrCode: {
+                    data: document.getElementById('qrCodeData').value,
+                    size: 100
+                },
+                saveToBrowserStorage: document.getElementById('saveToStorage').checked,
+                // New flag to get image data back for embedding
+                outputType: 'dataURL'
+            };
+
+            try {
+                // **DEBUGGING STEP**: Check if the imported function is valid.
+                if (typeof generateReceiptImage !== 'function') {
+                    alert('Error: The `generateReceiptImage` function was not loaded correctly. Check the module import path and file.');
+                    return;
+                }
+
+                console.log('Attempting to generate receipt image...');
+                // Get the image data URL from the function
+                const imageDataUrl = await generateReceiptImage(receiptData);
+                console.log('Generated image data URL (first 100 chars):', imageDataUrl ? imageDataUrl.substring(0, 100) + '...' : 'empty/invalid');
+
+                // Embed the image in the page
+                const outputContainer = document.getElementById('receipt-output');
+                const receiptImage = document.getElementById('receipt-image');
+                const downloadButton = document.getElementById('download-button');
+
+                // Add an error handler for the image
+                receiptImage.onerror = () => {
+                    console.error('Failed to load image from data URL. Data URL might be invalid or corrupted.');
+                    alert('Error loading generated image. Check console for details.');
+                };
+                downloadButton.href = imageDataUrl;
+                receiptImage.src = imageDataUrl;
+                outputContainer.style.display = 'block';
+            } catch (error) {
+                console.error("Failed to generate receipt:", error);
+                alert('An error occurred. Check the console for details.');
+            }
+        });
+    </script>
+
+</body>
+</html>
