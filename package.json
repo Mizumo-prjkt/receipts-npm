@@ -1,6 +1,6 @@
 {
   "name": "receipt-generator-js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A Receipt Generator using JS",
   "keywords": [
     "receiptgen",
