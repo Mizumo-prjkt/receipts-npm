@@ -18,7 +18,7 @@
         h1, h2 { color: #333; }
         .form-group { margin-bottom: 1em; }
         label { display: block; margin-bottom: .5em; font-weight: bold; }
-        input[type="text"], input[type="number"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-family: sans-serif; font-size: 14px; }
         button { padding: 10px 15px; border: none; background-color: #007bff; color: white; border-radius: 4px; cursor: pointer; font-size: 16px; }
         button:hover { background-color: #0056b3; }
         #items-container .item { display: flex; gap: 10px; margin-bottom: 10px; }
@@ -69,8 +69,15 @@
                 <input type="text" id="currency" value="$">
             </div>
             <div class="form-group">
-                <label for="discount">Discount Value (fixed amount)</label>
-                <input type="number" id="discount" value="1.50" step="0.01">
+                <label for="discountType">Discount Type</label>
+                <select id="discountType">
+                    <option value="fixed">Fixed Amount</option>
+                    <option value="percentage">Percentage (%)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="discount">Discount Value</label>
+                <input type="number" id="discount" value="1.50" step="0.01" min="0">
             </div>
             <div class="form-group">
                 <label for="taxRate">Tax Rate (%)</label>
@@ -148,6 +155,7 @@
             });
 
             const discountValue = parseFloat(document.getElementById('discount').value);
+            const discountType = document.getElementById('discountType').value;
             const taxRateValue = parseFloat(document.getElementById('taxRate').value);
 
             const receiptData = {
@@ -157,7 +165,7 @@
                 storeName: document.getElementById('storeName').value,
                 items: items,
                 taxRate: taxRateValue > 0 ? taxRateValue / 100 : 0,
-                discount: discountValue > 0 ? { type: 'fixed', value: discountValue } : null,
+                discount: discountValue > 0 ? { type: discountType, value: discountValue } : null,
                 qrCode: {
                     data: document.getElementById('qrCodeData').value,
                     size: 100
